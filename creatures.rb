@@ -39,7 +39,7 @@ class Life
 
 
   attr_reader :char
-  attr_accessor :energy,:position
+  attr_accessor :energy,:position, :dead
 
   def get_direction
     dir_keys = @directions.keys
@@ -51,6 +51,7 @@ class Life
     world_grid.get(target_pos)
   end
 
+
   def find_squares_of(world_grid,element)
     direction_values = @directions.values
     target_direction_vectors = direction_values.select do
@@ -59,6 +60,12 @@ class Life
       target.is_a?(element)
     end
     target_direction_vectors
+  end
+
+  def find_single_square_of(world_grid,element)
+    spaces = find_squares_of(world_grid,element)
+    nil if spaces.length == 0
+    spaces.sample
   end
 
   def die
@@ -80,12 +87,16 @@ end
 class Critter < Life
   def initialize(char)
     super
-    @energy = 10
+    @energy = rand(20)
   end
 
   def act(world_grid)
     if @energy <= 0
       die
+    elsif @energy <= 7
+      eat(world_grid)
+    elsif @energy >= 15
+      reproduce(world_grid)
     else
       move(world_grid)
     end
@@ -94,13 +105,60 @@ class Critter < Life
   def move(world_grid)
     event = {"action" => "move"}
     @energy -= 0.2
-    free_spaces = find_squares_of(world_grid,Space)
-    if free_spaces.length > 0
-      dest = free_spaces.sample
-      return event,@position.plus(dest)
+    if destination = find_single_square_of(world_grid,Space)
+      return event,@position.plus(destination)
+    end
+    return event,@position
+  end
+
+  def eat(world_grid)
+    event = {"action" => "eat"}
+    if destination = find_single_square_of(world_grid,Plant)
+      return event,@position.plus(destination)
+    end
+    move(world_grid)
+  end
+
+  def reproduce(world_grid)
+    event = {"action" => "reproduce"}
+    if destination = find_single_square_of(world_grid,Space)
+      @energy /= 2
+      return event,@position.plus(destination)
+    end
+    return event,@position
+  end
+
+end
+
+class Plant < Life
+  def initialize(char,pos = GridVector.new(-1,-1))
+    super
+    @energy = rand(7)+3
+  end
+
+  def act(world_grid)
+    if @energy >=20
+      self.energy /= 2
+      reproduce(world_grid)
     else
-      return event,@position
+      grow
     end
   end
+
+  def grow(value = 0.5)
+    event = {"action" => "grow"}
+    @energy += value
+    return event,nil
+  end
+
+  def reproduce(world_grid)
+    event = {"action" => "reproduce"}
+    if destination = find_single_square_of(world_grid,Space)
+      @energy /= 2
+      return event,@position.plus(destination)
+    end
+      grow
+  end
+
 
 end

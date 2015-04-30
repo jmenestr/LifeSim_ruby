@@ -24,6 +24,9 @@ class World
         if element.is_a?(Critter)
           element.position = GridVector.new(x,y)
           @critters.push(element)
+        elsif element.is_a?(Plant)
+          element.position = GridVector.new(x,y)
+          @plants.push(element)
         end
         @grid.set(GridVector.new(x,y),element)
       end
@@ -36,7 +39,7 @@ class World
 
   def turn
     critters_after_turn = []
-    @critter.each do
+    @critters.each do
       |critter|
       (event,dest) = critter.act(@grid)
       if event["action"] == "move"
@@ -44,9 +47,44 @@ class World
         @grid.set(dest,critter)
         critter.position = dest
         critters_after_turn.push(critter)
+      elsif event["action"] == "eat"
+        target = @grid.get(dest)
+        target_plant_energy = target.energy
+        critter.energy += target_plant_energy
+        target.kill
+        @grid.set(critter.position,Space.new)
+        critter.position = dest
+        @grid.set(dest,critter)
+        critters_after_turn << critter
+      elsif event["action"] == "reproduce"
+        baby_crit = Critter.new(critter.char)
+        baby_crit.position = dest
+        @grid.set(dest,baby_crit)
+        critters_after_turn.push(critter)
+        critters_after_turn.push(baby_crit)
+      elsif event["action"] == "die"
+        @grid.set(critter.position,Space.new)
       end
     end
     @critters = critters_after_turn
+
+    plants_after_turn = []
+    @plants.each do
+      |plant|
+      if plant.is_dead?
+        next
+      end
+      (event,dest) = plant.act(@grid)
+      if event["action"] == "grow"
+        plants_after_turn.push(plant)
+      elsif event["action"] == "reproduce"
+        new_plant = Plant.new(plant.char,dest)
+        @grid.set(dest,new_plant)
+        plants_after_turn.push(plant)
+        plants_after_turn.push(new_plant)
+      end
+    end
+    @plants = plants_after_turn
   end
 
   def to_s

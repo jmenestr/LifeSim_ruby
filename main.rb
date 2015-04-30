@@ -4,23 +4,23 @@ require_relative "world"
 
 plan =     ["#############################",
             "#        x            x    ##",
-            "#                   x       #",
+            "#  **               x       #",
             "#         #####             #",
             "##          #   #  x  ##    #",
             "###           ##     #   x  #",
             "#         x ###      #      #",
             "#   ####                    #",
             "#   ##                      #",
-            "#    #                 ###  #",
-            "#    #             xxx      #",
+            "#    #         **      ###  #",
+            "#    #         **  xxx      #",
             "#############################"]
 
-legend = {"#"=>Wall, "x" => Critter}
+legend = {"#"=>Wall, "x" => Critter, "*" => Plant}
 
 world = World.new(plan,legend)
 
-500.times do
-  system("clear")
+until world.critters.empty? do
+  system("cls")
   world.turn
   print world
   sleep 0.1
